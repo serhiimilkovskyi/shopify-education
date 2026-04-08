@@ -1,43 +1,34 @@
-class DateRefresh extends HTMLElement {
-  #controller = new AbortController();
-
-  connectedCallback() {
-    const button = this.querySelector("[data-refresh-button]");
-    button?.addEventListener("click", this.#handleRefresh, { signal: this.#controller.signal });
+class RefreshTimeButton extends HTMLElement {
+  constructor() {
+    super();
+    this.addEventListener("click", this.handleClick.bind(this));
   }
 
-  disconnectedCallback() {
-    this.#controller.abort();
-  }
-
-  #handleRefresh = async () => {
-    const sectionId = this.dataset.sectionId;
-    if (!sectionId) return;
-
+  async handleClick() {
     try {
-      // Cache-buster query param so each click gets fresh Liquid "now" output
-      const url = new URL(window.location.href);
-      url.searchParams.set("section_id", sectionId);
-      url.searchParams.set("_", Date.now().toString());
+      const { sectionId } = this.dataset;
+      console.log("sectionId", sectionId);
+      if (!sectionId) return;
 
-      const response = await fetch(url.toString());
-      if (!response.ok) throw new Error(`Failed to fetch section: ${response.status}`);
+      const response = await fetch(
+        `${window.location.pathname}?section_id=${sectionId}&_=${Date.now()}`,
+      );
+      if (!response.ok) throw new Error("Failed to fetch section");
 
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, "text/html");
       const newSection = doc.getElementById(`shopify-section-${sectionId}`);
-      const newDate = newSection?.querySelector("[data-date-value]")?.textContent?.trim();
 
+      const newDate = newSection?.querySelector("[data-date-value]")?.textContent?.trim();
       const currentDateEl = this.querySelector("[data-date-value]");
+
       if (currentDateEl && newDate) {
         currentDateEl.textContent = newDate;
       }
     } catch (error) {
-      console.error("Date refresh failed", error);
+      console.error("Error refreshing section:", error);
     }
-  };
-}
+  }
+};
 
-if (!customElements.get("date-refresh")) {
-  customElements.define("date-refresh", DateRefresh);
-}
+customElements.define("date-refresh", RefreshTimeButton);
