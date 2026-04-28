@@ -22,12 +22,15 @@
   data-available="{% if first_available_variant %}true{% else %}false{% endif %}"
   {{ block.shopify_attributes }}
 >
+  <script>
+    console.log('first_available_variant', {{ product | json }});
+  </script>
   <button
     type="button"
     class="button collection-quick-add__button"
     ref="button"
     on:click="collection-quick-add-component/handleClick"
-    {% unless first_available_variant %}
+    {% unless first_available_variant and first_available_variant.available %}
       disabled
       aria-disabled="true"
     {% endunless %}
