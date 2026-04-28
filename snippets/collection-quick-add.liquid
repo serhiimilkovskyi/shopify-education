@@ -1,10 +1,3 @@
-{%- doc -%}
-  Quick add for collection product cards: adds the first available variant via Cart API + Section Rendering API.
-
-  @param {object} product - Product from closest.product
-  @param {object} block - Theme block
-{%- enddoc -%}
-
 {% liquid
   assign first_available_variant = blank
   for variant in product.variants

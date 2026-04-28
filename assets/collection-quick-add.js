@@ -2,11 +2,6 @@ import { Component } from '@theme/component';
 import { fetchConfig } from '@theme/utilities';
 import { CartAddEvent, CartErrorEvent } from '@theme/events';
 
-/**
- * Collects section IDs for every cart-items-component (drawer + cart page) so a single
- * Cart API response can hydrate them via the Section Rendering API.
- * @returns {string[]}
- */
 function getCartItemSectionIds() {
   /** @type {string[]} */
   const ids = [];
@@ -27,11 +22,7 @@ function getCartItemSectionIds() {
 class CollectionQuickAddComponent extends Component {
   requiredRefs = ['button'];
 
-  /**
-   * Adds the card's variant with `sections` in the same request, then dispatches CartAddEvent
-   * so cart-items-component morphs from `response.sections` without a follow-up section fetch.
-   * @param {MouseEvent} event
-   */
+  /** @param {MouseEvent} event */
   handleClick(event) {
     event.preventDefault();
 
