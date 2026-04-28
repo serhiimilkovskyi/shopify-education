@@ -192,8 +192,7 @@
       },
       "block_order": [
         "footer_copyright_jweRK8",
-        "footer_policy_list_VCdnpa",
-        "social_links_Ew63Kq"
+        "footer_policy_list_VCdnpa"
       ],
       "name": "t:names.utilities",
       "settings": {
@@ -207,7 +206,6 @@
     }
   },
   "order": [
-    "footer_m9NzUG",
     "footer_utilities_jLGE8U"
   ]
 }

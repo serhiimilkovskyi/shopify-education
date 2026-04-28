@@ -1,0 +1,72 @@
+{%- doc -%}
+  Quick add for collection product cards: adds the first available variant via Cart API + Section Rendering API.
+
+  @param {object} product - Product from closest.product
+  @param {object} block - Theme block
+{%- enddoc -%}
+
+{% liquid
+  assign first_available_variant = blank
+  for variant in product.variants
+    if variant.available
+      assign first_available_variant = variant
+      break
+    endif
+  endfor
+
+  assign add_label = 'actions.add_to_cart' | t
+  assign qty = 1
+  if first_available_variant and first_available_variant.quantity_rule.min > 1
+    assign qty = first_available_variant.quantity_rule.min
+  endif
+%}
+
+<collection-quick-add-component
+  class="collection-quick-add"
+  data-variant-id="{% if first_available_variant %}{{ first_available_variant.id }}{% endif %}"
+  data-quantity="{{ qty }}"
+  data-product-id="{{ product.id }}"
+  data-available="{% if first_available_variant %}true{% else %}false{% endif %}"
+  {{ block.shopify_attributes }}
+>
+  <button
+    type="button"
+    class="button collection-quick-add__button"
+    ref="button"
+    on:click="collection-quick-add-component/handleClick"
+    {% unless first_available_variant %}
+      disabled
+      aria-disabled="true"
+    {% endunless %}
+    aria-label="{{ product.title | escape }} — {{ add_label }}"
+  >
+    <span class="add-to-cart-text">
+      <span
+        aria-hidden="true"
+        class="svg-wrapper add-to-cart-icon"
+      >
+        {{- 'icon-add-to-cart.svg' | inline_asset_content -}}
+      </span>
+      <span class="add-to-cart-text__content">
+        <span><span>{{ add_label }}</span></span>
+      </span>
+    </span>
+  </button>
+</collection-quick-add-component>
+
+{% stylesheet %}
+  .collection-quick-add {
+    width: 100%;
+    pointer-events: auto;
+  }
+
+  .collection-quick-add__button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .collection-quick-add__button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+{% endstylesheet %}

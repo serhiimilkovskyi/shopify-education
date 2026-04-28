@@ -1,0 +1,13 @@
+{% assign product = closest.product %}
+
+{% unless product == blank %}
+  {% render 'collection-quick-add', product: product, block: block %}
+{% endunless %}
+
+{% schema %}
+{
+  "name": "Collection quick add",
+  "tag": null,
+  "settings": []
+}
+{% endschema %}
