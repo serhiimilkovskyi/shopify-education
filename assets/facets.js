@@ -841,3 +841,20 @@ class FacetStatusComponent extends Component {
 if (!customElements.get('facet-status-component')) {
   customElements.define('facet-status-component', FacetStatusComponent);
 }
+
+window.addEventListener('popstate', () => {
+  const url = new URL(window.location.href);
+  const urlParameters = new URLSearchParams(url.search);
+  const facetsForms = document.querySelectorAll('facets-form-component');
+
+  facetsForms.forEach((form) => {
+    if (form instanceof FacetsFormComponent) {
+      form.dispatchEvent(new FilterUpdateEvent(urlParameters));
+    }
+  });
+
+  const primaryForm = facetsForms[0];
+  if (primaryForm instanceof FacetsFormComponent) {
+    void sectionRenderer.renderSection(primaryForm.sectionId, { url });
+  }
+});
