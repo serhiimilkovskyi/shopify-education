@@ -11,7 +11,11 @@
   assign search_style = 'none'
 
   if section.settings.show_search
-    assign search_style = 'modal'
+    if section.settings.search_position == 'center'
+      assign search_style = 'inline'
+    else
+      assign search_style = 'modal'
+    endif
   endif
 
   if section.settings.show_search
@@ -98,6 +102,14 @@
       endif
     endif
   endif
+  if section.settings.show_search and section.settings.search_position == 'center'
+    if shop.customer_accounts_enabled
+      assign order = 'drawer_search,logo,menu,localization,search,actions'
+    else
+      assign order = 'logo,menu,localization,search,actions'
+    endif
+  endif
+
   capture search
     render 'search', style: search_style, class: search_class, display_style: section.settings.actions_display_style
   endcapture
@@ -110,7 +122,11 @@
     assign skip_drawer_search = true
   endif
 
-  if section.settings.search_row == 'bottom' or search_style != 'none' and skip_drawer_search == false
+  if section.settings.search_position == 'center' and search_style == 'inline'
+    capture drawer_search
+      render 'search', class: 'search-action--mobile-modal desktop:hidden', style: 'modal', display_style: section.settings.actions_display_style
+    endcapture
+  elsif section.settings.search_row == 'bottom' or search_style != 'none' and skip_drawer_search == false
     # Mobile search duplicate for when search is not in the right order for mobile layout
     capture drawer_search
       render 'search', class: 'search-action--hidden-on-menu', style: search_style, display_style: section.settings.actions_display_style
@@ -1228,11 +1244,15 @@
           "label": "t:options.left"
         },
         {
+          "value": "center",
+          "label": "t:options.center"
+        },
+        {
           "value": "right",
           "label": "t:options.right"
         }
       ],
-      "default": "right",
+      "default": "center",
       "visible_if": "{{ section.settings.show_search }}"
     },
     {

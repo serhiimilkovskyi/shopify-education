@@ -48,7 +48,9 @@ class PredictiveSearchComponent extends Component {
       this.#showResetButton();
     }
 
-    if (dialog) {
+    if (this.#isInline) {
+      document.addEventListener('click', this.#handleClickOutside, { signal });
+    } else if (dialog) {
       document.addEventListener('keydown', this.#handleKeyboardShortcut, { signal });
       dialog.addEventListener(DialogCloseEvent.eventName, this.#handleDialogClose, { signal });
       dialog.addEventListener(DialogOpenEvent.eventName, this.#handleDialogOpen, { signal, once: true });
@@ -56,11 +58,40 @@ class PredictiveSearchComponent extends Component {
       this.addEventListener('click', this.#handleModalClick, { signal });
     }
 
-    if (RecentlyViewed.getProducts().length > 0) {
+    if (!this.#isInline && RecentlyViewed.getProducts().length > 0) {
       requestIdleCallback(() => {
         this.#loadEmptyState();
       });
     }
+  }
+
+  get #isInline() {
+    return this.dataset.mode === 'inline';
+  }
+
+  /**
+   * Closes the inline dropdown when clicking outside the component.
+   * @param {MouseEvent} event
+   */
+  #handleClickOutside = (event) => {
+    if (!(event.target instanceof Node) || this.contains(event.target)) return;
+
+    if (this.refs.searchInput.value.trim().length > 0) {
+      this.#resetSearch();
+    } else {
+      this.#closeInlineDropdown();
+    }
+  };
+
+  #closeInlineDropdown() {
+    const { searchInput } = this.refs;
+    searchInput.setAttribute('aria-expanded', 'false');
+    this.#currentIndex = -1;
+    this.querySelector('.predictive-search-form__content-wrapper')?.setAttribute('hidden', '');
+  }
+
+  #openInlineDropdown() {
+    this.querySelector('.predictive-search-form__content-wrapper')?.removeAttribute('hidden');
   }
 
   /**
@@ -121,7 +152,8 @@ class PredictiveSearchComponent extends Component {
       this.querySelectorAll(
         '.predictive-search-results__wrapper-queries, ' +
           '.predictive-search-results__wrapper-products, ' +
-          '.predictive-search-results__list'
+          '.predictive-search-results__list, ' +
+          '.predictive-search-results__rows'
       )
     );
 
@@ -129,6 +161,9 @@ class PredictiveSearchComponent extends Component {
       .flatMap((container) => {
         if (container.classList.contains('predictive-search-results__wrapper-products')) {
           return Array.from(container.querySelectorAll('.predictive-search-results__card'));
+        }
+        if (container.classList.contains('predictive-search-results__rows')) {
+          return Array.from(container.querySelectorAll('.predictive-search-results__row'));
         }
         return Array.from(container.querySelectorAll('[ref="resultsItems[]"], .predictive-search-results__card'));
       })
@@ -315,27 +350,29 @@ class PredictiveSearchComponent extends Component {
 
     const url = new URL(Theme.routes.predictive_search_url, location.origin);
     url.searchParams.set('q', searchTerm);
+    url.searchParams.set('resources[type]', 'product');
+    url.searchParams.set('resources[limit]', '10');
     url.searchParams.set('resources[limit_scope]', 'each');
 
-    const { predictiveSearchResults } = this.refs;
-
+    const { predictiveSearchResults, searchInput } = this.refs;
     const abortController = this.#createAbortController();
 
-    sectionRenderer
-      .getSectionHTML(this.dataset.sectionId, false, url)
-      .then((resultsMarkup) => {
-        if (!resultsMarkup) return;
+    try {
+      const resultsMarkup = await sectionRenderer.getSectionHTML(this.dataset.sectionId, false, url);
 
-        if (abortController.signal.aborted) return;
+      if (!resultsMarkup || abortController.signal.aborted) return;
 
-        morph(predictiveSearchResults, resultsMarkup);
+      morph(predictiveSearchResults, resultsMarkup);
+      this.#resetScrollPositions();
 
-        this.#resetScrollPositions();
-      })
-      .catch((error) => {
-        if (abortController.signal.aborted) return;
-        throw error;
-      });
+      if (this.#isInline) {
+        this.#openInlineDropdown();
+        searchInput.setAttribute('aria-expanded', 'true');
+      }
+    } catch (error) {
+      if (abortController.signal.aborted) return;
+      throw error;
+    }
   }
 
   /**
@@ -382,7 +419,15 @@ class PredictiveSearchComponent extends Component {
 
     this.#currentIndex = -1;
     searchInput.value = '';
+    searchInput.setAttribute('aria-expanded', 'false');
     this.#hideResetButton();
+
+    if (this.#isInline) {
+      this.#closeInlineDropdown();
+      predictiveSearchResults.innerHTML =
+        '<div id="predictive-search-results" class="predictive-search-dropdown" role="listbox"></div>';
+      return;
+    }
 
     const abortController = this.#createAbortController();
     const url = new URL(window.location.href);

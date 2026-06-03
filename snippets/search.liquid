@@ -1,33 +1,36 @@
 {%- doc -%}
-  Renders the search action button.
+  Renders the search action — inline predictive search or modal trigger.
 
-  @param {string} [style] - The style of the search action.
-  @param {string} [class] - Additional classes for the search action.
-  @param {string} [display_style] - The display style ('icon' or 'text').
-
-  @example
-  {% render 'search', style: 'default', class: 'custom-class', display_style: 'icon' %}
+  @param {string} [style] - 'modal', 'inline', or 'none'
+  @param {string} [class] - Additional CSS classes
+  @param {string} [display_style] - 'icon' or 'text' (modal only)
 {%- enddoc -%}
 
 {% unless style == 'none' %}
-  <search-button
-    class="search-action{% if display_style == 'text' %} search-action--text{% endif %}{% if class != blank %} {{ class | strip }}{% endif %}"
-  >
-    <button
-      on:click="#search-modal/showDialog"
-      class="button-unstyled header-actions__action{% if display_style == 'text' %} header-actions__text-style{% endif %}"
-      aria-label="{{ 'content.search_input_label' | t }}"
-      aria-haspopup="dialog"
+  {% if style == 'inline' %}
+    <div class="search-action search-action--inline mobile:hidden{% if class != blank %} {{ class | strip }}{% endif %}">
+      {% render 'predictive-search-inline' %}
+    </div>
+  {% else %}
+    <search-button
+      class="search-action{% if display_style == 'text' %} search-action--text{% endif %}{% if class != blank %} {{ class | strip }}{% endif %}"
     >
-      <span class="{% if display_style == 'icon' %}hidden{% else %}mobile:hidden{% endif %}">
-        {{ 'content.search' | t }}
-      </span>
+      <button
+        on:click="#search-modal/showDialog"
+        class="button-unstyled header-actions__action{% if display_style == 'text' %} header-actions__text-style{% endif %}"
+        aria-label="{{ 'content.search_input_label' | t }}"
+        aria-haspopup="dialog"
+      >
+        <span class="{% if display_style == 'icon' %}hidden{% else %}mobile:hidden{% endif %}">
+          {{ 'content.search' | t }}
+        </span>
 
-      <span class="svg-wrapper {% if display_style != 'icon' %}desktop:hidden{% endif %}">
-        {{ 'icon-search.svg' | inline_asset_content }}
-      </span>
-    </button>
-  </search-button>
+        <span class="svg-wrapper {% if display_style != 'icon' %}desktop:hidden{% endif %}">
+          {{ 'icon-search.svg' | inline_asset_content }}
+        </span>
+      </button>
+    </search-button>
+  {% endif %}
 {% endunless %}
 
 {% stylesheet %}
@@ -36,6 +39,12 @@
     --search-border-width: var(--style-border-width-inputs);
 
     display: flex;
+  }
+
+  .search-action--inline {
+    width: 100%;
+    max-width: 36rem;
+    flex: 1 1 auto;
   }
 
   @media screen and (max-width: 749px) {
@@ -64,6 +73,12 @@
     @media screen and (min-width: 750px) {
       margin-inline: calc(var(--gap-md) * -1) calc(var(--gap-xs) * -1);
     }
+  }
+
+  .header__column--center .search-action--inline {
+    margin-inline: 0;
+    width: 100%;
+    max-width: 36rem;
   }
 
   @media screen and (min-width: 750px) {
