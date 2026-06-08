@@ -201,12 +201,18 @@
                 "padding-inline-end": 0
               },
               "blocks": {}
+            },
+            "collection_quick_add": {
+              "type": "collection-quick-add",
+              "settings": {},
+              "blocks": {}
             }
           },
           "block_order": [
             "card-gallery",
             "product_title_4nY4eT",
-            "price_EzJzMm"
+            "price_EzJzMm",
+            "collection_quick_add"
           ]
         }
       },
