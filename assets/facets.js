@@ -56,50 +56,71 @@ class FacetsFormComponent extends Component {
   }
 
   /**
-   * Updates the URL hash with current filter parameters
+   * Builds a collection/search URL from the current form filter state.
+   * Uses Shopify-provided param names (Search & Discovery compatible).
+   * @returns {URL}
    */
-  #updateURLHash() {
-    const url = new URL(window.location.href);
+  #buildFilteredURL() {
+    const url = new URL(window.location.pathname, window.location.origin);
     const urlParameters = this.createURLParameters();
 
-    url.search = '';
     for (const [param, value] of urlParameters.entries()) {
       url.searchParams.append(param, value);
     }
 
-    history.pushState({ urlParameters: urlParameters.toString() }, '', url.toString());
+    return url;
   }
 
   /**
-   * Updates filters and renders the section
+   * Updates the browser URL with current filter parameters.
    */
-  updateFilters = () => {
-    this.#updateURLHash();
-    this.dispatchEvent(new FilterUpdateEvent(this.createURLParameters()));
-    this.#updateSection();
-  };
+  #updateURLHash() {
+    const url = this.#buildFilteredURL();
+    history.pushState({ urlParameters: url.searchParams.toString() }, '', url.toString());
+  }
 
   /**
-   * Updates the section
+   * Fetches and morphs the collection/search section via the Section Rendering API.
+   * @param {URL} [url] - URL including filter query params
+   * @returns {Promise<void>}
    */
-  #updateSection() {
+  async #updateSection(url = new URL(window.location.href)) {
     const viewTransition = !this.closest('dialog');
 
+    const render = () =>
+      sectionRenderer.renderSection(this.sectionId, {
+        url,
+        cache: false,
+      });
+
     if (viewTransition) {
-      startViewTransition(() => sectionRenderer.renderSection(this.sectionId), ['product-grid']);
+      await startViewTransition(render, ['product-grid']);
     } else {
-      sectionRenderer.renderSection(this.sectionId);
+      await render();
     }
   }
 
   /**
-   * Updates filters based on a provided URL
+   * Updates filters and renders the section.
+   */
+  updateFilters = async () => {
+    const url = this.#buildFilteredURL();
+
+    this.#updateURLHash();
+    this.dispatchEvent(new FilterUpdateEvent(url.searchParams));
+    await this.#updateSection(url);
+  };
+
+  /**
+   * Updates filters based on a provided URL (e.g. from filter remove pills).
    * @param {string} url - The URL to update filters with
    */
-  updateFiltersByURL(url) {
-    history.pushState('', '', url);
-    this.dispatchEvent(new FilterUpdateEvent(this.createURLParameters()));
-    this.#updateSection();
+  async updateFiltersByURL(url) {
+    const filterUrl = new URL(url, window.location.href);
+
+    history.pushState('', '', filterUrl.toString());
+    this.dispatchEvent(new FilterUpdateEvent(filterUrl.searchParams));
+    await this.#updateSection(filterUrl);
   }
 }
 
@@ -841,3 +862,20 @@ class FacetStatusComponent extends Component {
 if (!customElements.get('facet-status-component')) {
   customElements.define('facet-status-component', FacetStatusComponent);
 }
+
+window.addEventListener('popstate', async () => {
+  const url = new URL(window.location.href);
+  const urlParameters = url.searchParams;
+  const facetsForms = document.querySelectorAll('facets-form-component');
+
+  facetsForms.forEach((form) => {
+    if (form instanceof FacetsFormComponent) {
+      form.dispatchEvent(new FilterUpdateEvent(urlParameters));
+    }
+  });
+
+  const primaryForm = facetsForms[0];
+  if (primaryForm instanceof FacetsFormComponent) {
+    await sectionRenderer.renderSection(primaryForm.sectionId, { url, cache: false });
+  }
+});
