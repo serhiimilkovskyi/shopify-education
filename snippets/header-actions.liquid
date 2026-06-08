@@ -64,52 +64,31 @@
   {{- block.shopify_attributes -}}
 >
   {% if shop.customer_accounts_enabled %}
-    {% liquid
-      assign account_actions_style = ''
-      if display_style == 'text' and section
-        assign actions_font = section.settings.actions_font | default: 'body'
-        assign font_obj = settings.type_heading_font
-        case actions_font
-          when 'body'
-            assign font_obj = settings.type_body_font
-          when 'subheading'
-            assign font_obj = settings.type_subheading_font
-          when 'accent'
-            assign font_obj = settings.type_accent_font
-        endcase
-        assign font_family = font_obj.family | append: ', ' | append: font_obj.fallback_families
-        assign font_family_safe = font_family | replace: '"', "'"
-        assign account_actions_style = '--header-actions-font-family: ' | append: font_family_safe | append: '; --header-actions-font-weight: ' | append: font_obj.weight | append: ';'
-      endif
-    %}
     <div
       class="account-button header-actions__action{% if display_style == 'text' %} account-button--text{% endif %} color-{{ settings.popover_color_scheme }}"
     >
-      <shopify-account
-        menu="{{ customer_account_menu }}"
-        {% if account_actions_style != blank %}
-          style="{{ account_actions_style }}"
-        {% endif %}
+      <a
+        href="/cart?view=account"
+        class="account-button__link header-actions__action"
+        aria-label="{{ 'content.account_title' | t }}"
       >
-        {% if customer %}
-          <div class="account-button__fallback"></div>
-        {% else %}
-          <span
-            slot="signed-out-avatar"
-            class="account-button__text header-actions__text-style {% if display_style == 'icon' %}hidden{% else %}mobile:hidden{% endif %}"
-          >
+        <span
+          class="account-button__text header-actions__text-style {% if display_style == 'icon' %}hidden{% else %}mobile:hidden{% endif %}"
+        >
+          {% if customer and customer.first_name != blank %}
+            {{ 'content.account_title_personalized' | t: first_name: customer.first_name }}
+          {% else %}
             {{ 'content.account_title' | t }}
-          </span>
+          {% endif %}
+        </span>
 
-          <span
-            slot="signed-out-avatar"
-            class="{% if display_style != 'icon' %}desktop:hidden{% endif %}"
-            aria-hidden="true"
-          >
-            {{ account_icon }}
-          </span>
-        {% endif %}
-      </shopify-account>
+        <span
+          class="{% if display_style != 'icon' %}desktop:hidden{% endif %}"
+          aria-hidden="true"
+        >
+          {{ account_icon }}
+        </span>
+      </a>
     </div>
   {% endif %}
 
@@ -286,6 +265,17 @@
     color: var(--color-account-icon);
     transition: color var(--header-content-transition-timing);
     -webkit-font-smoothing: antialiased;
+  }
+
+  .account-button__link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 44px;
+    color: inherit;
+    text-decoration: none;
+    line-height: normal;
   }
 
   shopify-account {
