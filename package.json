@@ -1,0 +1,9 @@
+{
+  "name": "shopify-education",
+  "private": true,
+  "scripts": {
+    "sync-env": "node scripts/sync-env.js",
+    "theme:dev": "npm run sync-env && shopify theme dev",
+    "theme:push": "npm run sync-env && shopify theme push"
+  }
+}

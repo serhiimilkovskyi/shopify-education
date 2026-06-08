@@ -1,0 +1,576 @@
+{% comment %}
+  @param {string} [login_url] - Login page URL
+  @param {string} [account_url] - Edit account page URL
+{% endcomment %}
+{%- capture storefront_access_token -%}{%- render 'customer-storefront-config' -%}{%- endcapture -%}
+{%- assign storefront_access_token = storefront_access_token | strip -%}
+{% assign login_url = login_url | default: '/cart?view=login' %}
+{% assign account_url = account_url | default: '/cart?view=account' %}
+
+<div class="account-page">
+  <div class="account-page__layout page-width">
+    <nav class="account-page__nav">
+      <a href="{{ account_url }}" class="account-page__nav-link account-page__nav-link--active">Edit Account</a>
+      <a href="{{ routes.account_url }}/orders" class="account-page__nav-link">My orders</a>
+      <a href="/pages/contact" class="account-page__nav-link">Need help</a>
+      <a href="{{ routes.account_logout_url }}" class="account-page__nav-link" id="account-logout">Log out</a>
+    </nav>
+
+    <div class="account-page__main">
+      <h1 class="account-page__title">Edit Account</h1>
+
+      {% if storefront_access_token == blank %}
+        <p class="account-page__notice">
+          Add your Storefront API access token in <code>snippets/customer-storefront-config.liquid</code>.
+        </p>
+      {% endif %}
+
+      <div class="account-card" id="personal-card">
+        <div class="account-card__view" id="personal-view">
+          <div class="account-card__grid">
+            <div class="account-field">
+              <span class="account-field__label">First Name</span>
+              <p class="account-field__value" id="v-firstName">—</p>
+            </div>
+            <div class="account-field">
+              <span class="account-field__label">Last Name</span>
+              <p class="account-field__value" id="v-lastName">—</p>
+            </div>
+            <div class="account-field">
+              <span class="account-field__label">Email</span>
+              <p class="account-field__value" id="v-email">—</p>
+            </div>
+            <div class="account-field">
+              <span class="account-field__label">Phone Number</span>
+              <p class="account-field__value" id="v-phone">—</p>
+            </div>
+          </div>
+          <label class="account-field__marketing">
+            <input type="checkbox" id="v-marketing" disabled>
+            Email marketing
+          </label>
+          <button type="button" class="account-card__edit" data-edit="personal">Edit</button>
+        </div>
+
+        <form class="account-card__form hidden" id="personal-form">
+          <input name="firstName" placeholder="First Name" autocomplete="given-name">
+          <input name="lastName" placeholder="Last Name" autocomplete="family-name">
+          <input name="email" type="email" placeholder="Email" autocomplete="email">
+          <input name="phone" type="tel" placeholder="Phone Number" autocomplete="tel">
+          <label class="account-field__marketing">
+            <input type="checkbox" name="acceptsMarketing">
+            Email marketing
+          </label>
+          <div class="account-card__actions">
+            <button type="submit">Save</button>
+            <button type="button" data-cancel="personal">Cancel</button>
+          </div>
+          <p class="account-card__error"></p>
+        </form>
+      </div>
+
+      <div class="account-card" id="address-card">
+        <h2 class="account-card__heading">Shipping Address</h2>
+        <div class="account-card__view" id="address-view">
+          <p class="account-field__value" id="v-address">—</p>
+          <button type="button" class="account-card__edit hidden" data-edit="address" id="address-edit-btn">Edit</button>
+        </div>
+        <form class="account-card__form hidden" id="address-form">
+          <input name="address1" placeholder="Address line 1">
+          <input name="address2" placeholder="Address line 2">
+          <input name="city" placeholder="City">
+          <input name="country" placeholder="Country">
+          <input name="company" placeholder="Company">
+          <input name="zip" placeholder="ZIP / Postal code">
+          <div class="account-card__actions">
+            <button type="submit">Save</button>
+            <button type="button" data-cancel="address">Cancel</button>
+          </div>
+          <p class="account-card__error"></p>
+        </form>
+      </div>
+
+      <div class="account-card" id="password-card">
+        <h2 class="account-card__heading">Password</h2>
+        <div class="account-card__view" id="password-view">
+          <p class="account-field__value">****************</p>
+          <button type="button" class="account-card__edit" data-edit="password">Edit</button>
+        </div>
+        <form class="account-card__form hidden" id="password-form">
+          <input name="password" type="password" placeholder="New password" autocomplete="new-password" required>
+          <input name="passwordConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" required>
+          <div class="account-card__actions">
+            <button type="submit">Save</button>
+            <button type="button" data-cancel="password">Cancel</button>
+          </div>
+          <p class="account-card__error"></p>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .account-page {
+    background: #ececec;
+    padding: 40px 20px 80px;
+    min-height: 50vh;
+  }
+
+  .account-page__layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 749px) {
+    .account-page__layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .account-page__nav {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    align-self: start;
+  }
+
+  .account-page__nav-link {
+    display: block;
+    padding: 10px 0;
+    color: #1a1a1a;
+    text-decoration: none;
+    font-size: 15px;
+  }
+
+  .account-page__nav-link--active {
+    color: #4caf50;
+    font-weight: 600;
+  }
+
+  .account-page__title {
+    margin: 0 0 24px;
+    font-size: 28px;
+  }
+
+  .account-page__notice {
+    color: #c0392b;
+    margin-bottom: 16px;
+  }
+
+  .account-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .account-card__heading {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .account-card__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 32px;
+  }
+
+  @media (max-width: 749px) {
+    .account-card__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .account-field__label {
+    display: block;
+    font-size: 13px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+
+  .account-field__value {
+    margin: 0;
+    font-size: 15px;
+    color: #1a1a1a;
+    line-height: 1.5;
+  }
+
+  .account-field__marketing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    font-size: 14px;
+  }
+
+  .account-card__edit {
+    margin-top: 20px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #4caf50;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .account-card__form input {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .account-card__actions {
+    margin-top: 8px;
+  }
+
+  .account-card__actions button {
+    margin-right: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+  }
+
+  .account-card__error {
+    color: #c0392b;
+    font-size: 14px;
+    margin: 8px 0 0;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+</style>
+
+<script>
+  (function () {
+    const STOREFRONT_TOKEN = {{ storefront_access_token | json }};
+    const API_URL = '/api/2024-10/graphql.json';
+    const LOGIN_URL = {{ login_url | json }};
+
+    let customerAddressId = null;
+
+    function getCookie(name) {
+      var match = document.cookie.split('; ').find(function (row) {
+        return row.startsWith(name + '=');
+      });
+      return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+    }
+
+    function setTokenCookie(token, expiresAt) {
+      var maxAge = Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000));
+      document.cookie = 'customer_token=' + encodeURIComponent(token) + '; path=/; max-age=' + maxAge + '; SameSite=Lax; Secure';
+      document.cookie = 'customer_token_expires=' + encodeURIComponent(expiresAt) + '; path=/; max-age=' + maxAge + '; SameSite=Lax; Secure';
+    }
+
+    function clearTokenCookies() {
+      document.cookie = 'customer_token=; path=/; max-age=0; SameSite=Lax; Secure';
+      document.cookie = 'customer_token_expires=; path=/; max-age=0; SameSite=Lax; Secure';
+    }
+
+    function getToken() {
+      var token = getCookie('customer_token');
+      var expires = getCookie('customer_token_expires');
+      if (!token || !expires || new Date(expires) <= new Date()) return null;
+      return token;
+    }
+
+    function parseGraphqlResponse(json) {
+      if (json.errors && json.errors.length) {
+        var err = json.errors[0];
+        var code = err.extensions && err.extensions.code;
+        if (code === 'UNAUTHORIZED') {
+          throw new Error(
+            'UNAUTHORIZED: Invalid Storefront API token. Use "Storefront API access token" from your app (not Admin API key). Enable scope unauthenticated_write_customers.'
+          );
+        }
+        throw new Error(err.message || code || 'GraphQL request failed.');
+      }
+      return json;
+    }
+
+    function storefrontFetch(query, variables) {
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN,
+        },
+        body: JSON.stringify({ query: query, variables: variables }),
+      }).then(function (res) {
+        return res.json();
+      }).then(parseGraphqlResponse);
+    }
+
+    function renewToken(token) {
+      return storefrontFetch(
+        'mutation renew($token: String!) {\
+          customerAccessTokenRenew(customerAccessToken: $token) {\
+            customerAccessToken { accessToken expiresAt }\
+            customerUserErrors { message }\
+          }\
+        }',
+        { token: token }
+      ).then(function (json) {
+        var payload = json.data && json.data.customerAccessTokenRenew;
+        if (payload && payload.customerAccessToken) {
+          setTokenCookie(payload.customerAccessToken.accessToken, payload.customerAccessToken.expiresAt);
+          return payload.customerAccessToken.accessToken;
+        }
+        return null;
+      });
+    }
+
+    function ensureToken() {
+      var token = getToken();
+      if (token) return Promise.resolve(token);
+
+      var expiredToken = getCookie('customer_token');
+      if (expiredToken) {
+        return renewToken(expiredToken).then(function (renewed) {
+          if (renewed) return renewed;
+          window.location.href = LOGIN_URL;
+          return null;
+        });
+      }
+
+      window.location.href = LOGIN_URL;
+      return Promise.resolve(null);
+    }
+
+    function formatAddress(address) {
+      if (!address) return '—';
+      var lines = [
+        address.address1,
+        address.address2,
+        [address.city, address.country].filter(Boolean).join(', '),
+        address.company,
+        address.zip,
+      ].filter(function (line) {
+        return line && String(line).trim() !== '';
+      });
+      return lines.join('<br>') || '—';
+    }
+
+    function fillAddressForm(form, address) {
+      if (!address) return;
+      form.address1.value = address.address1 || '';
+      form.address2.value = address.address2 || '';
+      form.city.value = address.city || '';
+      form.country.value = address.country || '';
+      form.company.value = address.company || '';
+      form.zip.value = address.zip || '';
+    }
+
+    function loadCustomer(token) {
+      return storefrontFetch(
+        'query getCustomer($token: String!) {\
+          customer(customerAccessToken: $token) {\
+            firstName lastName email phone acceptsMarketing\
+            defaultAddress {\
+              id address1 address2 city country zip company\
+            }\
+          }\
+        }',
+        { token: token }
+      ).then(function (json) {
+        var customer = json.data && json.data.customer;
+        if (!customer) {
+          clearTokenCookies();
+          window.location.href = LOGIN_URL;
+          return;
+        }
+
+        document.getElementById('v-firstName').textContent = customer.firstName || '—';
+        document.getElementById('v-lastName').textContent = customer.lastName || '—';
+        document.getElementById('v-email').textContent = customer.email || '—';
+        document.getElementById('v-phone').textContent = customer.phone || '—';
+        document.getElementById('v-marketing').checked = !!customer.acceptsMarketing;
+
+        var personalForm = document.getElementById('personal-form');
+        personalForm.firstName.value = customer.firstName || '';
+        personalForm.lastName.value = customer.lastName || '';
+        personalForm.email.value = customer.email || '';
+        personalForm.phone.value = customer.phone || '';
+        personalForm.acceptsMarketing.checked = !!customer.acceptsMarketing;
+
+        var address = customer.defaultAddress;
+        customerAddressId = address && address.id ? address.id : null;
+        document.getElementById('v-address').innerHTML = formatAddress(address);
+        fillAddressForm(document.getElementById('address-form'), address);
+
+        var addressEditBtn = document.getElementById('address-edit-btn');
+        if (customerAddressId) {
+          addressEditBtn.classList.remove('hidden');
+        }
+      });
+    }
+
+    function updateCustomer(token, input) {
+      return storefrontFetch(
+        'mutation update($token: String!, $customer: CustomerUpdateInput!) {\
+          customerUpdate(customerAccessToken: $token, customer: $customer) {\
+            customer { firstName lastName email phone acceptsMarketing }\
+            customerAccessToken { accessToken expiresAt }\
+            customerUserErrors { message field }\
+          }\
+        }',
+        { token: token, customer: input }
+      ).then(function (json) {
+        var payload = json.data && json.data.customerUpdate;
+        if (!payload || (payload.customerUserErrors && payload.customerUserErrors.length)) {
+          throw new Error(
+            (payload && payload.customerUserErrors[0] && payload.customerUserErrors[0].message) ||
+              'Update failed.'
+          );
+        }
+        if (payload.customerAccessToken) {
+          setTokenCookie(payload.customerAccessToken.accessToken, payload.customerAccessToken.expiresAt);
+        }
+        return payload.customer;
+      });
+    }
+
+    function updateAddress(token, addressInput) {
+      if (!customerAddressId) return Promise.reject(new Error('No default address found.'));
+
+      return storefrontFetch(
+        'mutation updateAddress($token: String!, $id: ID!, $address: MailingAddressInput!) {\
+          customerAddressUpdate(customerAccessToken: $token, id: $id, address: $address) {\
+            customerAddress { id address1 address2 city country zip company }\
+            customerUserErrors { message }\
+          }\
+        }',
+        { token: token, id: customerAddressId, address: addressInput }
+      ).then(function (json) {
+        var payload = json.data && json.data.customerAddressUpdate;
+        if (!payload || (payload.customerUserErrors && payload.customerUserErrors.length)) {
+          throw new Error(
+            (payload && payload.customerUserErrors[0] && payload.customerUserErrors[0].message) ||
+              'Address update failed.'
+          );
+        }
+        return payload.customerAddress;
+      });
+    }
+
+    document.querySelectorAll('[data-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-edit');
+        var view = document.getElementById(id + '-view');
+        var form = document.getElementById(id + '-form');
+        if (view) view.classList.add('hidden');
+        if (form) form.classList.remove('hidden');
+        btn.classList.add('hidden');
+      });
+    });
+
+    document.querySelectorAll('[data-cancel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = btn.getAttribute('data-cancel');
+        var view = document.getElementById(id + '-view');
+        var form = document.getElementById(id + '-form');
+        if (view) view.classList.remove('hidden');
+        if (form) {
+          form.classList.add('hidden');
+          var error = form.querySelector('.account-card__error');
+          if (error) error.textContent = '';
+        }
+        var editBtn = document.querySelector('[data-edit="' + id + '"]');
+        if (editBtn) editBtn.classList.remove('hidden');
+      });
+    });
+
+    document.getElementById('personal-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var form = event.target;
+      var errorEl = form.querySelector('.account-card__error');
+      errorEl.textContent = '';
+
+      ensureToken().then(function (token) {
+        if (!token) return;
+        var fd = new FormData(form);
+        return updateCustomer(token, {
+          firstName: fd.get('firstName'),
+          lastName: fd.get('lastName'),
+          email: fd.get('email'),
+          phone: fd.get('phone'),
+          acceptsMarketing: fd.get('acceptsMarketing') === 'on',
+        }).then(function () {
+          return loadCustomer(getToken());
+        }).then(function () {
+          document.querySelector('[data-cancel="personal"]').click();
+        });
+      }).catch(function (err) {
+        errorEl.textContent = err.message;
+      });
+    });
+
+    document.getElementById('password-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var form = event.target;
+      var errorEl = form.querySelector('.account-card__error');
+      errorEl.textContent = '';
+
+      var fd = new FormData(form);
+      if (fd.get('password') !== fd.get('passwordConfirm')) {
+        errorEl.textContent = 'Passwords do not match.';
+        return;
+      }
+
+      ensureToken().then(function (token) {
+        if (!token) return;
+        return updateCustomer(token, { password: fd.get('password') });
+      }).then(function () {
+        form.reset();
+        document.querySelector('[data-cancel="password"]').click();
+      }).catch(function (err) {
+        errorEl.textContent = err.message;
+      });
+    });
+
+    document.getElementById('address-form').addEventListener('submit', function (event) {
+      event.preventDefault();
+      var form = event.target;
+      var errorEl = form.querySelector('.account-card__error');
+      errorEl.textContent = '';
+
+      ensureToken().then(function (token) {
+        if (!token) return;
+        var fd = new FormData(form);
+        return updateAddress(token, {
+          address1: fd.get('address1'),
+          address2: fd.get('address2'),
+          city: fd.get('city'),
+          country: fd.get('country'),
+          company: fd.get('company'),
+          zip: fd.get('zip'),
+        }).then(function () {
+          return loadCustomer(getToken());
+        }).then(function () {
+          document.querySelector('[data-cancel="address"]').click();
+        });
+      }).catch(function (err) {
+        errorEl.textContent = err.message;
+      });
+    });
+
+    document.getElementById('account-logout').addEventListener('click', function () {
+      clearTokenCookies();
+    });
+
+    if (STOREFRONT_TOKEN) {
+      ensureToken().then(function (token) {
+        if (token) loadCustomer(token);
+      });
+    }
+  })();
+</script>

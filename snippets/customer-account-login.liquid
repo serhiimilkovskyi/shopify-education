@@ -1,0 +1,300 @@
+{% comment %}
+  @param {string} [redirect_url] - URL after successful login or registration
+{% endcomment %}
+{%- capture storefront_access_token -%}{%- render 'customer-storefront-config' -%}{%- endcapture -%}
+{%- assign storefront_access_token = storefront_access_token | strip -%}
+{% assign redirect_url = redirect_url | default: '/cart?view=account' %}
+
+<div class="customer-auth page-width">
+  <div class="customer-auth__tabs">
+    <button type="button" class="customer-auth__tab customer-auth__tab--active" data-tab="login">Log in</button>
+    <button type="button" class="customer-auth__tab" data-tab="register">Create account</button>
+  </div>
+
+  {% if storefront_access_token == blank %}
+    <p class="customer-auth__notice">
+      Add your Storefront API access token in <code>snippets/customer-account-login.liquid</code>.
+    </p>
+  {% endif %}
+
+  <div class="customer-auth__panel customer-auth__panel--active" id="login-panel">
+    <h1 class="customer-auth__title">Log in</h1>
+    <form id="customer-login-form" class="customer-auth__form">
+      <label>
+        Email
+        <input type="email" name="email" autocomplete="email" required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Log in</button>
+      <p id="customer-login-error" class="customer-auth__error" hidden></p>
+    </form>
+  </div>
+
+  <div class="customer-auth__panel" id="register-panel">
+    <h1 class="customer-auth__title">Create account</h1>
+    <form id="customer-register-form" class="customer-auth__form">
+      <label>
+        First name
+        <input type="text" name="firstName" autocomplete="given-name" required>
+      </label>
+      <label>
+        Last name
+        <input type="text" name="lastName" autocomplete="family-name" required>
+      </label>
+      <label>
+        Email
+        <input type="email" name="email" autocomplete="email" required>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" autocomplete="new-password" minlength="5" required>
+      </label>
+      <label class="customer-auth__checkbox">
+        <input type="checkbox" name="acceptsMarketing">
+        Email marketing
+      </label>
+      <button type="submit">Create account</button>
+      <p id="customer-register-error" class="customer-auth__error" hidden></p>
+    </form>
+  </div>
+</div>
+
+<style>
+  .customer-auth {
+    max-width: 420px;
+    margin: 80px auto;
+    padding: 0 20px;
+  }
+
+  .customer-auth__tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .customer-auth__tab {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 15px;
+    color: #666;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+
+  .customer-auth__tab--active {
+    color: #4caf50;
+    font-weight: 600;
+    border-bottom-color: #4caf50;
+  }
+
+  .customer-auth__panel {
+    display: none;
+  }
+
+  .customer-auth__panel--active {
+    display: block;
+  }
+
+  .customer-auth__title {
+    margin: 0 0 24px;
+    font-size: 24px;
+  }
+
+  .customer-auth__form label {
+    display: block;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+
+  .customer-auth__checkbox {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .customer-auth__form input[type='text'],
+  .customer-auth__form input[type='email'],
+  .customer-auth__form input[type='password'] {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .customer-auth__form button[type='submit'] {
+    margin-top: 8px;
+    padding: 10px 24px;
+    cursor: pointer;
+  }
+
+  .customer-auth__error,
+  .customer-auth__notice {
+    color: #c0392b;
+    font-size: 14px;
+  }
+</style>
+
+<script>
+  (function () {
+    const STOREFRONT_TOKEN = {{ storefront_access_token | json }};
+    const API_URL = '/api/2024-10/graphql.json';
+    const REDIRECT_URL = {{ redirect_url | json }};
+
+    document.querySelectorAll('.customer-auth__tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var target = tab.getAttribute('data-tab');
+
+        document.querySelectorAll('.customer-auth__tab').forEach(function (t) {
+          t.classList.toggle('customer-auth__tab--active', t === tab);
+        });
+
+        document.getElementById('login-panel').classList.toggle('customer-auth__panel--active', target === 'login');
+        document.getElementById('register-panel').classList.toggle('customer-auth__panel--active', target === 'register');
+      });
+    });
+
+    if (window.location.search.indexOf('register=1') !== -1) {
+      document.querySelector('[data-tab="register"]').click();
+    }
+
+    function setTokenCookie(token, expiresAt) {
+      var maxAge = Math.max(0, Math.floor((new Date(expiresAt) - Date.now()) / 1000));
+      document.cookie = 'customer_token=' + encodeURIComponent(token) + '; path=/; max-age=' + maxAge + '; SameSite=Lax; Secure';
+      document.cookie = 'customer_token_expires=' + encodeURIComponent(expiresAt) + '; path=/; max-age=' + maxAge + '; SameSite=Lax; Secure';
+    }
+
+    function parseGraphqlResponse(json) {
+      if (json.errors && json.errors.length) {
+        var err = json.errors[0];
+        var code = err.extensions && err.extensions.code;
+        if (code === 'UNAUTHORIZED') {
+          throw new Error(
+            'UNAUTHORIZED: Invalid Storefront API token. Use "Storefront API access token" from your app (not Admin API key). Enable scope unauthenticated_write_customers.'
+          );
+        }
+        throw new Error(err.message || code || 'GraphQL request failed.');
+      }
+      return json;
+    }
+
+    function storefrontFetch(query, variables) {
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN,
+        },
+        body: JSON.stringify({ query: query, variables: variables }),
+      }).then(function (res) {
+        return res.json();
+      }).then(parseGraphqlResponse);
+    }
+
+    function loginWithCredentials(email, password) {
+      return storefrontFetch(
+        'mutation login($input: CustomerAccessTokenCreateInput!) {\
+          customerAccessTokenCreate(input: $input) {\
+            customerAccessToken { accessToken expiresAt }\
+            customerUserErrors { message }\
+          }\
+        }',
+        { input: { email: email, password: password } }
+      ).then(function (json) {
+        var payload = json.data && json.data.customerAccessTokenCreate;
+
+        if (!payload || (payload.customerUserErrors && payload.customerUserErrors.length)) {
+          throw new Error(
+            (payload && payload.customerUserErrors[0] && payload.customerUserErrors[0].message) ||
+              'Login failed.'
+          );
+        }
+
+        var tokenData = payload.customerAccessToken;
+        setTokenCookie(tokenData.accessToken, tokenData.expiresAt);
+        window.location.href = REDIRECT_URL;
+      });
+    }
+
+    var loginForm = document.getElementById('customer-login-form');
+    var loginError = document.getElementById('customer-login-error');
+
+    loginForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (!STOREFRONT_TOKEN) {
+        loginError.textContent = 'Storefront API token is not configured.';
+        loginError.hidden = false;
+        return;
+      }
+
+      var fd = new FormData(loginForm);
+      loginError.hidden = true;
+
+      loginWithCredentials(fd.get('email'), fd.get('password')).catch(function (err) {
+        loginError.textContent = err.message;
+        loginError.hidden = false;
+      });
+    });
+
+    var registerForm = document.getElementById('customer-register-form');
+    var registerError = document.getElementById('customer-register-error');
+
+    registerForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (!STOREFRONT_TOKEN) {
+        registerError.textContent = 'Storefront API token is not configured.';
+        registerError.hidden = false;
+        return;
+      }
+
+      var fd = new FormData(registerForm);
+      var email = fd.get('email');
+      var password = fd.get('password');
+
+      registerError.hidden = true;
+
+      storefrontFetch(
+        'mutation register($input: CustomerCreateInput!) {\
+          customerCreate(input: $input) {\
+            customer { id email firstName lastName }\
+            customerUserErrors { message field }\
+          }\
+        }',
+        {
+          input: {
+            firstName: fd.get('firstName'),
+            lastName: fd.get('lastName'),
+            email: email,
+            password: password,
+            acceptsMarketing: fd.get('acceptsMarketing') === 'on',
+          },
+        }
+      ).then(function (json) {
+        var payload = json.data && json.data.customerCreate;
+
+        if (!payload || (payload.customerUserErrors && payload.customerUserErrors.length)) {
+          throw new Error(
+            (payload && payload.customerUserErrors[0] && payload.customerUserErrors[0].message) ||
+              'Registration failed.'
+          );
+        }
+
+        return loginWithCredentials(email, password);
+      }).catch(function (err) {
+        registerError.textContent = err.message;
+        registerError.hidden = false;
+      });
+    });
+  })();
+</script>

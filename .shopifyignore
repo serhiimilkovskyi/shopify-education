@@ -1,0 +1,4 @@
+# Skip config on push — remote theme "test-data" has older settings schema
+# (page_width as number vs string). Push theme files only.
+config/settings_data.json
+config/settings_schema.json
