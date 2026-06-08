@@ -1,0 +1,71 @@
+{%- doc -%}
+  Renders predictive search products as horizontal rows matching the header dropdown design.
+
+  @param {object[]} products - array of product objects
+  @param {number} [limit] - max products to show
+{%- enddoc -%}
+
+<ul class="predictive-search-results__rows list-unstyled">
+  {% liquid
+    assign limit = limit | default: 10
+  %}
+  {% for product in products limit: limit %}
+    {% liquid
+      assign capacity = product.metafields.custom.capacity.value | default: product.metafields.custom.capacity
+      assign duration = product.metafields.custom.duration.value | default: product.metafields.custom.duration
+
+      for option in product.options_with_values
+        assign option_name = option.name | downcase
+        if capacity == blank
+          if option_name contains 'person' or option_name contains 'capacity'
+            assign capacity = option.values.first
+          endif
+        endif
+        if duration == blank
+          if option_name contains 'duration' or option_name contains 'time'
+            assign duration = option.values.first
+          endif
+        endif
+      endfor
+
+      assign featured_image = product.featured_media.preview_image | default: product.featured_image
+    %}
+    <li
+      class="predictive-search-results__row"
+      ref="resultsItems[]"
+    >
+      <a
+        class="predictive-search-results__row-link"
+        href="{{ product.url }}"
+      >
+        <span class="predictive-search-results__row-media">
+          {% if featured_image != blank %}
+            {{
+              featured_image
+              | image_url: width: 160
+              | image_tag:
+                loading: 'lazy',
+                class: 'predictive-search-results__row-image',
+                widths: '80, 120, 160',
+                sizes: '80px'
+            }}
+          {% else %}
+            <span class="predictive-search-results__row-image predictive-search-results__row-image--placeholder"></span>
+          {% endif %}
+        </span>
+        <span class="predictive-search-results__row-title">{{ product.title }}</span>
+        <span class="predictive-search-results__row-price">{{ product.price | money }}</span>
+        <span class="predictive-search-results__row-meta">
+          {% if capacity != blank %}
+            <span class="predictive-search-results__row-capacity">{{ capacity }} person</span>
+          {% endif %}
+        </span>
+        <span class="predictive-search-results__row-meta">
+          {% if duration != blank %}
+            <span class="predictive-search-results__row-duration">{{ duration }} min</span>
+          {% endif %}
+        </span>
+      </a>
+    </li>
+  {% endfor %}
+</ul>

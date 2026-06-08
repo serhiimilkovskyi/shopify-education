@@ -14,11 +14,7 @@
       data-search-results
     >
       {% if predictive_search.performed %}
-        {% assign search_results_count = predictive_search.resources.products.size
-          | plus: predictive_search.resources.pages.size
-          | plus: predictive_search.resources.articles.size
-          | plus: predictive_search.resources.collections.size
-        %}
+        {% assign search_results_count = predictive_search.resources.products.size %}
       {% else %}
         {% assign search_results_count = search.results_count %}
       {% endif %}
@@ -37,113 +33,47 @@
       </div>
 
       {% if predictive_search.performed %}
-        {% if predictive_search.resources.queries.size > 0 %}
-          <ul
-            class="predictive-search-results__list predictive-search-results__wrapper predictive-search-results__wrapper-queries list-unstyled"
-          >
-            {%- for resource in predictive_search.resources.queries -%}
-              <li
-                class="predictive-search-results__card--query"
-                ref="resultsItems[]"
-                on:keydown="/onSearchKeyDown"
-              >
-                <a
-                  class="pills__pill predictive-search-results__pill"
-                  href="{{ resource.url }}"
-                  aria-label="{{ resource.text }}"
-                >
-                  <span>
-                    {{ resource.styled_text }}
-                  </span>
-                </a>
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-
         {%- if search_results_count > 0 -%}
+          <div class="predictive-search-results__header">
+            <a
+              class="predictive-search-results__view-all"
+              href="{{ routes.search_url }}?q={{ predictive_search.terms | url_encode }}"
+            >
+              {{ 'content.search_results_view_all' | t }}
+            </a>
+          </div>
+
           {% if predictive_search.resources.products.size > 0 %}
-            {%- liquid
-              assign title = 'content.search_results_resource_products' | t
-              assign products = predictive_search.resources.products
-              render 'predictive-search-products-list', title: title, products: products
-            -%}
-          {% endif %}
-
-          {% if predictive_search.resources.collections.size > 0 %}
-            {% assign resource_title = 'content.search_results_resource_collections' | t %}
-
-            {% render 'predictive-search-resource-carousel',
-              title: resource_title,
-              resource_type: 'collection',
-              resources: predictive_search.resources.collections
+            {% render 'predictive-search-product-rows',
+              products: predictive_search.resources.products,
+              limit: 10
             %}
           {% endif %}
 
-          {% if predictive_search.resources.pages.size > 0 %}
-            {% assign resource_title = 'content.search_results_resource_pages' | t %}
-
-            {% render 'predictive-search-resource-carousel',
-              title: resource_title,
-              resource_type: 'page',
-              resources: predictive_search.resources.pages
-            %}
-          {% endif %}
-
-          {% if predictive_search.resources.articles.size > 0 %}
-            {% assign resource_title = 'content.search_results_resource_articles' | t %}
-
-            {% render 'predictive-search-resource-carousel',
-              title: resource_title,
-              resource_type: 'article',
-              resources: predictive_search.resources.articles
-            %}
-          {% endif %}
-        {%- elsif predictive_search.resources.queries.size == 0 -%}
-          <p class="predictive-search-results__no-results">
-            {{ 'content.search_results_no_results' | t: terms: predictive_search.terms }}
-          </p>
-        {% endif %}
-      {% else %}
-        {%- liquid
-          assign title = 'content.recently_viewed_products' | t
-          assign products = search.results
-
-          comment
-            Searching for recently viewed products by id doesn't preserve the order of the products.
-            To work around this, we get the product ids into an array then use that to reorder them.
-          endcomment
-          if search.terms contains 'id:'
-            assign new_products_ids = search.terms | replace: 'id:', '' | split: ' OR '
-          endif
-          render 'predictive-search-products-list', title: title, products: products, order_ids: new_products_ids, limit: 4
-        -%}
-      {% endif %}
-
-      {% if predictive_search.performed %}
-        {%- if search_results_count > 0 -%}
-          {% assign total_results = predictive_search.resources.products.size
-            | plus: predictive_search.resources.collections.size
-            | plus: predictive_search.resources.pages.size
-            | plus: predictive_search.resources.articles.size
-          %}
+          {% assign total_results = predictive_search.resources.products.size %}
           {% assign single_result_url = null %}
           {% if total_results == 1 %}
-            {% if predictive_search.resources.products.size == 1 %}
-              {% assign single_result_url = predictive_search.resources.products.first.url %}
-            {% elsif predictive_search.resources.collections.size == 1 %}
-              {% assign single_result_url = predictive_search.resources.collections.first.url %}
-            {% elsif predictive_search.resources.pages.size == 1 %}
-              {% assign single_result_url = predictive_search.resources.pages.first.url %}
-            {% elsif predictive_search.resources.articles.size == 1 %}
-              {% assign single_result_url = predictive_search.resources.articles.first.url %}
-            {% endif %}
+            {% assign single_result_url = predictive_search.resources.products.first.url %}
           {% endif %}
 
           {% if single_result_url %}
             <div data-single-result-url="{{ single_result_url }}"></div>
           {% endif %}
-        {% endif %}
+        {%- else -%}
+          <p class="predictive-search-results__no-results">
+            {{ 'content.search_results_no_results' | t: terms: predictive_search.terms }}
+          </p>
+        {%- endif -%}
+      {% else %}
+        {%- liquid
+          assign title = 'content.recently_viewed_products' | t
+          assign products = search.results
+
+          if search.terms contains 'id:'
+            assign new_products_ids = search.terms | replace: 'id:', '' | split: ' OR '
+          endif
+          render 'predictive-search-products-list', title: title, products: products, order_ids: new_products_ids, limit: 4
+        -%}
       {% endif %}
     </div>
   </div>

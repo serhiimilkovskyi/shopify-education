@@ -1,0 +1,92 @@
+{% doc %}
+  Renders inline predictive search for the header center column.
+
+  @param {string} [class] - Additional CSS classes for the component.
+{% enddoc %}
+
+<script
+  src="{{ 'predictive-search.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+<predictive-search-component
+  class="predictive-search predictive-search--inline color-{{ settings.popover_color_scheme }}{% if class != blank %} {{ class | strip }}{% endif %}"
+  style="--product-corner-radius: {{ settings.product_corner_radius | default: 8 | append: 'px' }};"
+  data-section-id="predictive-search"
+  data-mode="inline"
+  data-testid="search-component--inline"
+  role="search"
+  aria-label="{{ 'content.search_input_label' | t }}"
+>
+  <form
+    action="{{ routes.search_url }}"
+    method="get"
+    role="search"
+    class="predictive-search-form"
+    ref="form"
+    on:keydown="/onSearchKeyDown"
+  >
+    <div class="predictive-search-form__header">
+      <div class="predictive-search-form__header-inner">
+        <label
+          for="predictive-search-inline-input"
+          class="visually-hidden"
+        >
+          {{- 'content.search_input_label' | t -}}
+        </label>
+        <input
+          class="search-input"
+          id="predictive-search-inline-input"
+          type="search"
+          name="q"
+          role="combobox"
+          aria-expanded="false"
+          aria-owns="predictive-search-results"
+          aria-controls="predictive-search-results"
+          aria-haspopup="listbox"
+          aria-autocomplete="list"
+          autocomplete="off"
+          placeholder="{{ 'content.search_input_placeholder' | t }}"
+          ref="searchInput"
+          on:input="/search"
+          on:keydown="/onSearchKeyDown"
+        >
+        <input
+          name="options[prefix]"
+          type="hidden"
+          value="last"
+        >
+        <button
+          type="button"
+          class="button-unstyled predictive-search__reset-button"
+          ref="resetButton"
+          hidden
+          on:click="/resetSearch"
+          aria-label="{{ 'accessibility.reset_search' | t }}"
+        >
+          <span class="svg-wrapper predictive-search__reset-button-icon">
+            {{ 'icon-close.svg' | inline_asset_content }}
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="predictive-search-form__content-wrapper"
+      hidden
+    >
+      <div
+        class="predictive-search-form__content"
+        ref="predictiveSearchResults"
+      >
+        <div
+          id="predictive-search-results"
+          class="predictive-search-dropdown"
+          role="listbox"
+          aria-label="{{ 'content.search_results_label' | t }}"
+        ></div>
+      </div>
+    </div>
+  </form>
+</predictive-search-component>
