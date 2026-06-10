@@ -5,6 +5,11 @@
   @param {string} [section_id] - The section ID for cart discount component.
 {%- enddoc -%}
 
+{%- capture storefront_access_token -%}{%- render 'customer-storefront-config' -%}{%- endcapture -%}
+{%- assign storefront_access_token = storefront_access_token | strip -%}
+{%- capture storefront_api_url -%}{%- render 'storefront-api-url' -%}{%- endcapture -%}
+{%- assign storefront_api_url = storefront_api_url | strip -%}
+
 <div class="cart-totals">
   {% # We need to keep this node in place to allow morphing to work properly # %}
   <div class="cart-totals__original-container cart-primary-typography">
@@ -134,6 +139,15 @@
                   {% if section_id != blank %}
                     data-section-id="{{ section_id }}"
                   {% endif %}
+                  {% if storefront_access_token != blank %}
+                    data-storefront-token="{{ storefront_access_token }}"
+                  {% endif %}
+                  {% if storefront_api_url != blank %}
+                    data-storefront-api-url="{{ storefront_api_url }}"
+                  {% endif %}
+                  {% if cart.token != blank %}
+                    data-cart-token="{{ cart.token }}"
+                  {% endif %}
                 >
                   <div class="cart-discount__content">
                     <form
@@ -159,8 +173,10 @@
                       <button
                         type="submit"
                         class="button cart-discount__button"
+                        ref="applyButton"
                       >
-                        {{ 'actions.apply' | t }}
+                        <span class="cart-discount__button-label">{{ 'actions.apply' | t }}</span>
+                        <span class="cart-discount__button-spinner" aria-hidden="true"></span>
                       </button>
                     </form>
                   </div>
@@ -528,7 +544,44 @@
   }
 
   .cart-discount__button {
+    position: relative;
     height: 100%;
+    background-color: #4caf50;
+    color: #fff;
+    border-color: #4caf50;
+  }
+
+  .cart-discount__button:hover:not(:disabled) {
+    background-color: #43a047;
+    border-color: #43a047;
+    color: #fff;
+  }
+
+  .cart-discount__button-spinner {
+    display: none;
+    width: 1em;
+    height: 1em;
+    border: 2px solid rgb(255 255 255 / 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: cart-discount-spin 0.7s linear infinite;
+  }
+
+  .cart-discount__button--loading .cart-discount__button-label {
+    visibility: hidden;
+  }
+
+  .cart-discount__button--loading .cart-discount__button-spinner {
+    display: block;
+    position: absolute;
+    inset: 0;
+    margin: auto;
+  }
+
+  @keyframes cart-discount-spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .cart-discount__content {

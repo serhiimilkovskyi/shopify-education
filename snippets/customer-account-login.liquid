@@ -3,6 +3,8 @@
 {% endcomment %}
 {%- capture storefront_access_token -%}{%- render 'customer-storefront-config' -%}{%- endcapture -%}
 {%- assign storefront_access_token = storefront_access_token | strip -%}
+{%- capture storefront_api_url -%}{%- render 'storefront-api-url' -%}{%- endcapture -%}
+{%- assign storefront_api_url = storefront_api_url | strip -%}
 {% assign redirect_url = redirect_url | default: '/cart?view=account' %}
 
 <div class="customer-auth page-width">
@@ -147,7 +149,7 @@
 <script>
   (function () {
     const STOREFRONT_TOKEN = {{ storefront_access_token | json }};
-    const API_URL = '/api/2024-10/graphql.json';
+    const API_URL = {{ storefront_api_url | default: '/api/2024-10/graphql.json' | json }};
     const REDIRECT_URL = {{ redirect_url | json }};
 
     document.querySelectorAll('.customer-auth__tab').forEach(function (tab) {
