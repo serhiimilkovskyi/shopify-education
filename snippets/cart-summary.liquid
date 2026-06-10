@@ -161,15 +161,18 @@
                       >
                         {{- 'accessibility.discount' | t -}}
                       </label>
-                      <input
-                        id="cart-discount"
-                        class="cart-discount__input"
-                        type="text"
-                        name="discount"
-                        size="8"
-                        placeholder="{{ 'content.discount_code' | t }}"
-                        required
-                      >
+                      <div class="cart-discount__field">
+                        <input
+                          id="cart-discount"
+                          class="cart-discount__input"
+                          type="text"
+                          name="discount"
+                          size="8"
+                          placeholder="{{ 'content.discount_code' | t }}"
+                          required
+                        >
+                        <p class="cart-discount__helper">Test discount: free</p>
+                      </div>
                       <button
                         type="submit"
                         class="button cart-discount__button"
@@ -545,7 +548,8 @@
 
   .cart-discount__button {
     position: relative;
-    height: 100%;
+    height: var(--button-size);
+    flex-shrink: 0;
     background-color: #4caf50;
     color: #fff;
     border-color: #4caf50;
@@ -585,7 +589,21 @@
   }
 
   .cart-discount__content {
-    height: calc(var(--button-size) + var(--padding-2xs) + var(--padding-sm));
+    height: auto;
+  }
+
+  .cart-discount__field {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 0;
+    gap: var(--gap-3xs);
+  }
+
+  .cart-discount__helper {
+    margin: 0;
+    font-size: var(--font-size--2xs);
+    color: rgb(var(--color-foreground-rgb) / var(--opacity-subdued-text));
   }
 
   .cart-discount__pill {
@@ -602,7 +620,7 @@
   .cart-discount__form {
     display: flex;
     gap: var(--padding-md);
-    align-items: center;
+    align-items: flex-start;
     height: 100%;
     padding-block: var(--padding-2xs) var(--padding-sm);
   }
