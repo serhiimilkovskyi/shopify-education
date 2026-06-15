@@ -5,7 +5,10 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 const ENV_PATH = path.join(ROOT, '.env');
-const SNIPPET_PATH = path.join(ROOT, 'snippets', 'customer-storefront-config.liquid');
+const TOKEN_SNIPPET_PATH = path.join(ROOT, 'snippets', 'customer-storefront-config.liquid');
+const API_URL_SNIPPET_PATH = path.join(ROOT, 'snippets', 'storefront-api-url.liquid');
+
+const DEFAULT_API_URL = '/api/2024-10/graphql.json';
 
 function loadEnv(filePath) {
   const env = {};
@@ -40,25 +43,43 @@ function loadEnv(filePath) {
   return env;
 }
 
-const token = loadEnv(ENV_PATH).SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+function writeSnippet(filePath, comment, outputDescription, value) {
+  const snippet = `{%- comment -%}
+  Auto-generated from .env by scripts/sync-env.js
+  Run: npm run sync-env
+  ${outputDescription}
+{%- endcomment -%}
+${value}`;
+
+  fs.writeFileSync(filePath, snippet, 'utf8');
+}
+
+const env = loadEnv(ENV_PATH);
+const token = env.SHOPIFY_STOREFRONT_ACCESS_TOKEN;
+const apiUrl = env.SHOPIFY_STOREFRONT_API_URL || DEFAULT_API_URL;
 
 if (!token) {
   console.error('SHOPIFY_STOREFRONT_ACCESS_TOKEN is empty in .env');
   process.exit(1);
 }
 
-const snippet = `{%- comment -%}
-  Auto-generated from .env by scripts/sync-env.js
-  Run: npm run sync-env
-  Outputs the raw Storefront API token. Consumers capture it:
-  {% capture storefront_access_token %}{% render 'customer-storefront-config' %}{% endcapture %}
-{%- endcomment -%}
-${token}`;
+writeSnippet(
+  TOKEN_SNIPPET_PATH,
+  'token',
+  'Outputs the raw Storefront API token. Consumers capture it:\n  {% capture storefront_access_token %}{% render \'customer-storefront-config\' %}{% endcapture %}',
+  token
+);
 
-fs.writeFileSync(SNIPPET_PATH, snippet, 'utf8');
+writeSnippet(
+  API_URL_SNIPPET_PATH,
+  'api url',
+  'Outputs the Storefront API URL. Consumers capture it:\n  {% capture storefront_api_url %}{% render \'storefront-api-url\' %}{% endcapture %}',
+  apiUrl
+);
+
 console.log('Updated snippets/customer-storefront-config.liquid from .env');
+console.log('Updated snippets/storefront-api-url.liquid from .env');
 
-const env = loadEnv(ENV_PATH);
 if (env.SHOPIFY_API_KEY || env.SHOPIFY_API_SECRET) {
   console.log('Admin API keys loaded in .env (not written to theme — server-side only).');
 }
