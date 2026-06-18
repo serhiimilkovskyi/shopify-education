@@ -1,0 +1,795 @@
+<script
+  src="{{ 'parallax.js' | asset_url }}"
+  type="module"
+  fetchpriority="low"
+></script>
+
+{% liquid
+  assign figure_indexes = '1,2,3,4,5' | split: ','
+  assign default_speeds = '0.2,0.3,0.5,0.6,0.8' | split: ','
+  assign default_colors = '#7B61FF,#FF6B6B,#FFD93D,#6BCB77,#4D96FF' | split: ','
+  assign default_sizes = '120,90,110,80,100' | split: ','
+  assign default_pos_x = '12,78,8,72,45' | split: ','
+  assign default_pos_y = '70,15,45,65,30' | split: ','
+%}
+
+<div class="section-background color-{{ section.settings.color_scheme }}"></div>
+<parallax-section
+  id="ParallaxSection-{{ section.id }}"
+  class="section section--{{ section.settings.section_width }} spacing-style color-{{ section.settings.color_scheme }} parallax-section"
+  data-parallax-enabled="{{ section.settings.enable_parallax }}"
+  style="{% render 'spacing-style', settings: section.settings %}"
+>
+  <div class="parallax-section__inner">
+    <div class="parallax-section__background" aria-hidden="true">
+      {% if section.settings.background_type == 'image' %}
+        {% render 'background-media',
+          background_media: 'image',
+          background_image: section.settings.background_image,
+          background_image_position: section.settings.background_image_position,
+          section: section
+        %}
+      {% endif %}
+      {% if section.settings.background_type == 'image' and section.settings.background_overlay_opacity > 0 %}
+        <div
+          class="parallax-section__background-overlay"
+          style="--parallax-overlay-opacity: {{ section.settings.background_overlay_opacity | divided_by: 100.0 }};"
+        ></div>
+      {% endif %}
+    </div>
+
+    <div class="parallax-section__content">
+      {% if section.settings.heading != blank %}
+        <h2 class="parallax-section__heading">{{ section.settings.heading }}</h2>
+      {% endif %}
+      {% if section.settings.subheading != blank %}
+        <p class="parallax-section__subheading">{{ section.settings.subheading }}</p>
+      {% endif %}
+    </div>
+
+    <div class="parallax-section__figures" aria-hidden="true">
+      {% for index_str in figure_indexes %}
+        {% liquid
+          assign i = index_str | plus: 0
+          assign loop_index = forloop.index0
+
+          assign image_key = 'figure_' | append: i | append: '_image'
+          assign color_key = 'figure_' | append: i | append: '_color'
+          assign size_key = 'figure_' | append: i | append: '_size'
+          assign pos_x_key = 'figure_' | append: i | append: '_position_x'
+          assign pos_y_key = 'figure_' | append: i | append: '_position_y'
+          assign speed_key = 'figure_' | append: i | append: '_speed'
+          assign blur_key = 'figure_' | append: i | append: '_blur'
+
+          assign figure_image = section.settings[image_key]
+          assign figure_color = section.settings[color_key] | default: default_colors[loop_index]
+          assign figure_size = section.settings[size_key] | default: default_sizes[loop_index]
+          assign figure_pos_x = section.settings[pos_x_key] | default: default_pos_x[loop_index]
+          assign figure_pos_y = section.settings[pos_y_key] | default: default_pos_y[loop_index]
+          assign figure_speed = section.settings[speed_key] | default: default_speeds[loop_index]
+          assign figure_blur = section.settings[blur_key] | default: 0
+        %}
+
+        <div
+          class="parallax-section__figure parallax-section__figure--{{ i }}"
+          ref="figures[]"
+          data-speed="{{ figure_speed }}"
+          data-figure-index="{{ i }}"
+          style="
+            --figure-size: {{ figure_size }}px;
+            --figure-color: {{ figure_color }};
+            --figure-x: {{ figure_pos_x }}%;
+            --figure-y: {{ figure_pos_y }}%;
+            --figure-blur: {{ figure_blur }}px;
+            z-index: {{ i }};
+          "
+        >
+          {% if figure_image != blank %}
+            {{
+              figure_image
+              | image_url: width: 500
+              | image_tag:
+                width: 500,
+                height: 500,
+                class: 'parallax-section__figure-image',
+                loading: 'lazy',
+                alt: ''
+            }}
+          {% else %}
+            <span class="parallax-section__shape parallax-section__shape--{{ i }}"></span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</parallax-section>
+
+{% style %}
+  #ParallaxSection-{{ section.id }} {
+  {% if section.settings.background_type == 'color' and section.settings.background_color != blank %}
+    --parallax-bg: {{ section.settings.background_color }} !important;
+  {% elsif section.settings.background_type == 'image' and section.settings.background_color != blank %}
+    --parallax-bg: {{ section.settings.background_color }} !important;
+  {% endif %}
+  {% if section.settings.background_type == 'image' %}
+    --parallax-image-opacity: {{ section.settings.background_image_opacity | divided_by: 100.0 }} !important;
+  {% endif %}
+  {% if section.settings.background_type == 'image' and section.settings.background_overlay_color != blank %}
+    --parallax-overlay-color: {{ section.settings.background_overlay_color }} !important;
+  {% endif %}
+    --parallax-min-height: {{ section.settings.section_min_height }}px !important;
+    --parallax-heading-color: {{ section.settings.heading_color }} !important;
+    --parallax-subheading-color: {{ section.settings.subheading_color }} !important;
+    --parallax-heading-size: {{ section.settings.heading_size }}px !important;
+    --parallax-subheading-size: {{ section.settings.subheading_size }}px !important;
+    --parallax-text-align: {{ section.settings.text_alignment }} !important;
+  }
+{% endstyle %}
+
+{% stylesheet %}
+  .parallax-section {
+    display: block;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .parallax-section__inner {
+    position: relative;
+    min-height: var(--parallax-min-height, 480px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--parallax-bg, transparent);
+    isolation: isolate;
+  }
+
+  .parallax-section__background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .parallax-section__background .background-image-container {
+    --image-opacity: var(--parallax-image-opacity, 1);
+  }
+
+  .parallax-section__background-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-color: var(--parallax-overlay-color, rgb(0 0 0 / 1));
+    opacity: var(--parallax-overlay-opacity, 0);
+  }
+
+  .parallax-section__content {
+    position: relative;
+    z-index: 10;
+    text-align: var(--parallax-text-align, center);
+    max-width: 42rem;
+    padding: 2rem 1.5rem;
+    pointer-events: none;
+  }
+
+  .parallax-section__heading {
+    margin: 0 0 0.75rem;
+    font-size: var(--parallax-heading-size, clamp(2rem, 5vw, 3.5rem));
+    line-height: 1.1;
+    color: var(--parallax-heading-color, inherit) !important;
+  }
+
+  .parallax-section__subheading {
+    margin: 0;
+    font-size: var(--parallax-subheading-size, clamp(1rem, 2.5vw, 1.25rem));
+    line-height: 1.5;
+    color: var(--parallax-subheading-color, inherit) !important;
+    opacity: 0.85;
+  }
+
+  .parallax-section__figures {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+
+  .parallax-section__figure {
+    position: absolute;
+    left: var(--figure-x, 50%);
+    top: var(--figure-y, 50%);
+    width: var(--figure-size, 100px);
+    height: var(--figure-size, 100px);
+    transform: translate(-50%, calc(-50% + var(--parallax-y, 0px)));
+    will-change: transform;
+  }
+
+  .parallax-section__figure-image,
+  .parallax-section__shape {
+    filter: blur(var(--figure-blur, 0px));
+  }
+
+  .parallax-section__figure-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 500px;
+    max-height: 500px;
+    object-fit: contain;
+  }
+
+  .parallax-section__shape {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: var(--figure-color, #7b61ff);
+    opacity: 0.85;
+  }
+
+  .parallax-section__shape--1 {
+    border-radius: 50%;
+  }
+
+  .parallax-section__shape--2 {
+    border-radius: 18%;
+    transform: rotate(18deg);
+  }
+
+  .parallax-section__shape--3 {
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  }
+
+  .parallax-section__shape--4 {
+    border-radius: 63% 37% 39% 61% / 46% 54% 46% 54%;
+  }
+
+  .parallax-section__shape--5 {
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  @media screen and (max-width: 749px) {
+    .parallax-section__inner {
+      min-height: calc(var(--parallax-min-height, 480px) * 0.75);
+    }
+
+    .parallax-section__figure {
+      width: calc(var(--figure-size, 100px) * 0.7);
+      height: calc(var(--figure-size, 100px) * 0.7);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .parallax-section__figure {
+      transform: translate(-50%, -50%);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Parallax",
+  "tag": "section",
+  "class": "parallax-section-wrapper",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Layered parallax"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Five abstract shapes move at different speeds as you scroll."
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color"
+    },
+    {
+      "type": "color",
+      "id": "subheading_color",
+      "label": "Subheading color"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "label": "Heading size",
+      "min": 24,
+      "max": 72,
+      "step": 2,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "subheading_size",
+      "label": "Subheading size",
+      "min": 12,
+      "max": 32,
+      "step": 1,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "header",
+      "content": "Parallax"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_parallax",
+      "label": "Enable parallax effect",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Width",
+      "options": [
+        { "value": "page-width", "label": "Page" },
+        { "value": "full-width", "label": "Full" }
+      ],
+      "default": "full-width"
+    },
+    {
+      "type": "range",
+      "id": "section_min_height",
+      "label": "Section height",
+      "min": 300,
+      "max": 900,
+      "step": 20,
+      "unit": "px",
+      "default": 520
+    },
+    {
+      "type": "header",
+      "content": "Background"
+    },
+    {
+      "type": "select",
+      "id": "background_type",
+      "label": "Background type",
+      "options": [
+        { "value": "default", "label": "Color scheme" },
+        { "value": "color", "label": "Custom color" },
+        { "value": "image", "label": "Image" }
+      ],
+      "default": "default"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "visible_if": "{{ section.settings.background_type == 'color' or section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "select",
+      "id": "background_image_position",
+      "label": "Image fit",
+      "options": [
+        { "value": "cover", "label": "Cover" },
+        { "value": "fit", "label": "Fit" }
+      ],
+      "default": "cover",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "range",
+      "id": "background_image_opacity",
+      "label": "Image opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100,
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "color",
+      "id": "background_overlay_color",
+      "label": "Overlay color",
+      "default": "#000000",
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "range",
+      "id": "background_overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 80,
+      "step": 5,
+      "unit": "%",
+      "default": 0,
+      "visible_if": "{{ section.settings.background_type == 'image' }}"
+    },
+    {
+      "type": "header",
+      "content": "Figure 1"
+    },
+    {
+      "type": "image_picker",
+      "id": "figure_1_image",
+      "label": "Custom image",
+      "info": "PNG, SVG, or JPG. Max 200KB, 500×500px. Leave empty for abstract shape."
+    },
+    {
+      "type": "color",
+      "id": "figure_1_color",
+      "label": "Shape color",
+      "default": "#7B61FF"
+    },
+    {
+      "type": "range",
+      "id": "figure_1_size",
+      "label": "Size",
+      "min": 40,
+      "max": 250,
+      "step": 5,
+      "unit": "px",
+      "default": 120
+    },
+    {
+      "type": "range",
+      "id": "figure_1_position_x",
+      "label": "Horizontal position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "figure_1_position_y",
+      "label": "Vertical position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 70
+    },
+    {
+      "type": "range",
+      "id": "figure_1_speed",
+      "label": "Parallax speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.2
+    },
+    {
+      "type": "range",
+      "id": "figure_1_blur",
+      "label": "Blur",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Figure 2"
+    },
+    {
+      "type": "image_picker",
+      "id": "figure_2_image",
+      "label": "Custom image",
+      "info": "PNG, SVG, or JPG. Max 200KB, 500×500px. Leave empty for abstract shape."
+    },
+    {
+      "type": "color",
+      "id": "figure_2_color",
+      "label": "Shape color",
+      "default": "#FF6B6B"
+    },
+    {
+      "type": "range",
+      "id": "figure_2_size",
+      "label": "Size",
+      "min": 40,
+      "max": 250,
+      "step": 5,
+      "unit": "px",
+      "default": 90
+    },
+    {
+      "type": "range",
+      "id": "figure_2_position_x",
+      "label": "Horizontal position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 78
+    },
+    {
+      "type": "range",
+      "id": "figure_2_position_y",
+      "label": "Vertical position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 15
+    },
+    {
+      "type": "range",
+      "id": "figure_2_speed",
+      "label": "Parallax speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.3
+    },
+    {
+      "type": "range",
+      "id": "figure_2_blur",
+      "label": "Blur",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Figure 3"
+    },
+    {
+      "type": "image_picker",
+      "id": "figure_3_image",
+      "label": "Custom image",
+      "info": "PNG, SVG, or JPG. Max 200KB, 500×500px. Leave empty for abstract shape."
+    },
+    {
+      "type": "color",
+      "id": "figure_3_color",
+      "label": "Shape color",
+      "default": "#FFD93D"
+    },
+    {
+      "type": "range",
+      "id": "figure_3_size",
+      "label": "Size",
+      "min": 40,
+      "max": 250,
+      "step": 5,
+      "unit": "px",
+      "default": 110
+    },
+    {
+      "type": "range",
+      "id": "figure_3_position_x",
+      "label": "Horizontal position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "figure_3_position_y",
+      "label": "Vertical position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 45
+    },
+    {
+      "type": "range",
+      "id": "figure_3_speed",
+      "label": "Parallax speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.5
+    },
+    {
+      "type": "range",
+      "id": "figure_3_blur",
+      "label": "Blur",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Figure 4"
+    },
+    {
+      "type": "image_picker",
+      "id": "figure_4_image",
+      "label": "Custom image",
+      "info": "PNG, SVG, or JPG. Max 200KB, 500×500px. Leave empty for abstract shape."
+    },
+    {
+      "type": "color",
+      "id": "figure_4_color",
+      "label": "Shape color",
+      "default": "#6BCB77"
+    },
+    {
+      "type": "range",
+      "id": "figure_4_size",
+      "label": "Size",
+      "min": 40,
+      "max": 250,
+      "step": 5,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "figure_4_position_x",
+      "label": "Horizontal position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 72
+    },
+    {
+      "type": "range",
+      "id": "figure_4_position_y",
+      "label": "Vertical position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 65
+    },
+    {
+      "type": "range",
+      "id": "figure_4_speed",
+      "label": "Parallax speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.6
+    },
+    {
+      "type": "range",
+      "id": "figure_4_blur",
+      "label": "Blur",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Figure 5"
+    },
+    {
+      "type": "image_picker",
+      "id": "figure_5_image",
+      "label": "Custom image",
+      "info": "PNG, SVG, or JPG. Max 200KB, 500×500px. Leave empty for abstract shape."
+    },
+    {
+      "type": "color",
+      "id": "figure_5_color",
+      "label": "Shape color",
+      "default": "#4D96FF"
+    },
+    {
+      "type": "range",
+      "id": "figure_5_size",
+      "label": "Size",
+      "min": 40,
+      "max": 250,
+      "step": 5,
+      "unit": "px",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "figure_5_position_x",
+      "label": "Horizontal position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 45
+    },
+    {
+      "type": "range",
+      "id": "figure_5_position_y",
+      "label": "Vertical position",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "figure_5_speed",
+      "label": "Parallax speed",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.8
+    },
+    {
+      "type": "range",
+      "id": "figure_5_blur",
+      "label": "Blur",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Parallax"
+    }
+  ]
+}
+{% endschema %}
